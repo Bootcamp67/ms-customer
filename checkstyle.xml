@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<module name="Checker">
+	<module name="TreeWalker">
+	<!-- Reglas de estilo -->
+        <module name="Indentation">
+        	<property name="tabWidth" value="4"/> <!-- Establece la indentacion en 4 espacios -->
+		<property name="indentLevel" value="4"/>
+        </module>
+
+        <module name="LineLength">
+            <property name="max" value="100"/> <!-- Longitud maxima de linea: 100 caracteres -->
+        </module>
+
+        <module name="FileLength">
+            <property name="max" value="1000"/> <!-- Longitud maxima del archivo: 1000 lineas -->
+        </module>
+
+        <module name="NamingConvention">
+            <property name="format" value="^[a-z][a-zA-Z0-9]*$"/> <!-- Convencion de nombres: solo minusculas y letras/numeros -->
+        </module>
+
+        <!-- Se eliminan las reglas de Javadoc -->
+
+        <module name="TreeWalker">
+            <module name="HideUtilityClassConstructor">
+                <property name="allowNoConstructor" value="true"/> <!-- Permitir constructor en clases que no sean de utilidad -->
+            </module>
+        </module>
+
+    </module>
+</module>

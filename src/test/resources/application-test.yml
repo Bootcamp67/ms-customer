@@ -1,0 +1,22 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: ms-customer
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration
+  data:
+    monodb:
+      uri: mongodb://localhost:27017/ms_customer_test
+    main:
+      allow-bean-definition-overriding: true
+  cloud:
+    kubernetes:
+      enabled: false
+
+logging:
+  level:
+    root: ERROR
+  security: DEBUG

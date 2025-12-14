@@ -11,11 +11,15 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * The type Customer service.
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
 
   private final CustomerRepository customerRepository;
+
 
   @Override
   public Flux<CustomerDTO> findAll() {
@@ -32,13 +36,16 @@ public class CustomerServiceImpl implements CustomerService {
 
   @Override
   public Mono<CustomerDTO> create(CustomerRequest request) {
-    Customer customer=Customer.builder()
-        .dni(request.getDni())
-        .fullName(request.getFullName())
-        .phone(request.getPhone())
-        .email(request.getEmail())
-        .build();
-    return customerRepository.save(customer).map(this::mapToDto);
+    return customerRepository.findByDni(request.getDni())
+        .flatMap(existing -> Mono.<CustomerDTO>error(new IllegalArgumentException("Document exists")))
+        .switchIfEmpty(
+            customerRepository.save(
+                Customer.builder()
+                    .dni(request.getDni())
+                    .fullName(request.getFullName())
+                    .build()
+            ).map(this::mapToDto)
+        );
   }
 
   @Override

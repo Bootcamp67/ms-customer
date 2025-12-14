@@ -8,6 +8,9 @@ import org.springframework.web.reactive.config.CorsRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.server.WebFilter;
 
+/**
+ * The type Web config.
+ */
 @Configuration
 @RequiredArgsConstructor
 public class WebConfig implements WebFluxConfigurer {
@@ -20,6 +23,11 @@ public class WebConfig implements WebFluxConfigurer {
         .allowedMethods("*");
   }
 
+  /**
+   * Add interceptor web filter.
+   *
+   * @return the web filter
+   */
   @Bean
   public WebFilter addInterceptor(){
     return headerInterceptor;
