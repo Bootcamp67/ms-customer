@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: ms-customer
+  cloud:
+    kubernetes:
+      config:
+        sources:
+          - name: ${spring.application.name}
+          - name: application-common
+        reload:
+          enable: true
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: local
+  cloud:
+    kubernetes:
+      config:
+        enabled: false
+      reload:
+        enabled: false
