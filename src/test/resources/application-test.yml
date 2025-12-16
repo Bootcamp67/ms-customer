@@ -7,16 +7,28 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
   data:
     monodb:
-      uri: mongodb://localhost:27017/ms_customer_test
+      database: test_db
     main:
       allow-bean-definition-overriding: true
+
   cloud:
+    config:
+      enable: false
     kubernetes:
       enabled: false
+  main:
+    allow-bean-definition-overriding: true
+
+header:
+  interceptor:
+    enabled: false
 
 logging:
   level:
-    root: ERROR
+    org.springframework.data.mongodb: DEBUG
+    com.bootcamp67.ms_customer: DEBUG
   security: DEBUG

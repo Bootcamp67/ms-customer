@@ -5,158 +5,225 @@ import com.bootcamp67.ms_customer.entity.Customer;
 import com.bootcamp67.ms_customer.exception.NotFoundException;
 import com.bootcamp67.ms_customer.repository.CustomerRepository;
 import com.bootcamp67.ms_customer.service.impl.CustomerServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@ActiveProfiles("test")
+@DisplayName("Customer Service Reactive Tests")
 class CustomerServiceImplTest {
 
   @Mock
   private CustomerRepository customerRepository;
 
   @InjectMocks
-  private CustomerServiceImpl service;
+  private CustomerServiceImpl customerService;
+
+  private Customer customer;
+  @MockBean
+  private CustomerRequest customerRequest;
+
+  @BeforeEach
+  void setUp() {
+    customer = Customer.builder()
+        .id("123")
+        .dni("12345678")
+        .fullName("Juan Perez")
+        .phone("987654321")
+        .email("juan.perez@example.com")
+        .build();
+
+    customerRequest = CustomerRequest.builder()
+        .dni("12345678")
+        .fullName("Juan Perez")
+        .phone("98745621")
+        .email("juan.perez@example.com")
+        .build();
+  }
 
   @Test
-  void findAll_shouldReturnListOfCustomers() {
-    Customer c1 = new Customer("1", "123", "Alice", "111", "a@mail.com");
-    Customer c2 = new Customer("2", "456", "Bob", "222", "b@mail.com");
+  @DisplayName("findAll - Should emit all customers reactively")
+  void findAll_Success() {
+    Customer customer2 = Customer.builder()
+        .id("456")
+        .dni("87654321")
+        .fullName("Maria Garcia")
+        .build();
 
-    when(customerRepository.findAll()).thenReturn(Flux.just(c1, c2));
+    when(customerRepository.findAll()).thenReturn(Flux.just(customer, customer2));
 
-    StepVerifier.create(service.findAll())
-        .expectNextMatches(dto -> dto.getFullName().equals("Alice"))
-        .expectNextMatches(dto -> dto.getFullName().equals("Bob"))
+    StepVerifier.create(customerService.findAll())
+        .assertNext(dto -> assertThat(dto.getId()).isEqualTo("123"))
+        .assertNext(dto -> assertThat(dto.getId()).isEqualTo("456"))
         .verifyComplete();
 
     verify(customerRepository, times(1)).findAll();
   }
 
   @Test
-  void findById_whenCustomerExists_shouldReturnCustomer() {
-    Customer c = new Customer("1", "123", "Alice", "111", "a@mail.com");
-    when(customerRepository.findById("1")).thenReturn(Mono.just(c));
+  @DisplayName("findAll - Should emit empty flux when no customers")
+  void findAll_Empty() {
+    when(customerRepository.findAll()).thenReturn(Flux.empty());
 
-    StepVerifier.create(service.findById("1"))
-        .expectNextMatches(dto -> dto.getFullName().equals("Alice"))
+    StepVerifier.create(customerService.findAll())
+        .expectNextCount(0)
         .verifyComplete();
-
-    verify(customerRepository, times(1)).findById("1");
   }
 
   @Test
-  void findById_whenCustomerNotFound_shouldThrowNotFoundException() {
-    when(customerRepository.findById("1")).thenReturn(Mono.empty());
+  @DisplayName("findById - Should emit customer reactively")
+  void findById_Success() {
+    when(customerRepository.findById("123")).thenReturn(Mono.just(customer));
 
-    StepVerifier.create(service.findById("1"))
-        .expectErrorMatches(err -> err instanceof NotFoundException &&
-            err.getMessage().equals("Customer not found"))
+    StepVerifier.create(customerService.findById("123"))
+        .assertNext(dto -> {
+          assertThat(dto.getId()).isEqualTo("123");
+          assertThat(dto.getDni()).isEqualTo("12345678");
+          assertThat(dto.getFullName()).isEqualTo("Juan Perez");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("findById - Should emit error when not found")
+  void findById_NotFound() {
+    when(customerRepository.findById(anyString())).thenReturn(Mono.empty());
+
+    StepVerifier.create(customerService.findById("999"))
+        .expectError(NotFoundException.class)
         .verify();
-
-    verify(customerRepository, times(1)).findById("1");
   }
 
   @Test
-  void create_whenDocumentNotExists_shouldCreateCustomer() {
-    CustomerRequest request = CustomerRequest.builder()
-        .dni("87654321")
-        .fullName("Bob")
-        .build();
+  @DisplayName("create - Should emit created customer reactively")
+  void create_Success() {
+    when(customerRepository.findByDni(anyString())).thenReturn(Mono.empty());
+    when(customerRepository.save(any(Customer.class)))
+        .thenReturn(Mono.just(customer));
 
-    Customer savedCustomer = Customer.builder()
-        .id("1")
-        .dni("87654321")
-        .fullName("Bob")
-        .build();
-
-    // Documento no existe
-    when(customerRepository.findByDni("87654321")).thenReturn(Mono.empty());
-    when(customerRepository.save(any(Customer.class))).thenReturn(Mono.just(savedCustomer));
-
-    StepVerifier.create(service.create(request))
-        .expectNextMatches(dto -> dto.getId().equals("1") && dto.getFullName().equals("Bob"))
-        .verifyComplete();
-  }
-  @Test
-  void create_whenDocumentNotExists_shouldSaveCustomer() {
-    CustomerRequest request = CustomerRequest.builder()
-        .dni("123")
-        .fullName("Alice")
-        .phone(null)
-        .email(null)
-        .build();
-    Customer saved = new Customer("1", "123", "Alice", null, null);
-
-    when(customerRepository.findByDni("123")).thenReturn(Mono.empty());
-    when(customerRepository.save(any(Customer.class))).thenReturn(Mono.just(saved));
-
-    StepVerifier.create(service.create(request))
-        .expectNextMatches(dto -> dto.getId().equals("1") && dto.getFullName().equals("Alice"))
+    StepVerifier.create(customerService.create(customerRequest))
+        .assertNext(dto -> {
+          assertThat(dto.getDni()).isEqualTo("12345678");
+          assertThat(dto.getFullName()).isEqualTo("Juan Perez");
+        })
         .verifyComplete();
 
-    verify(customerRepository, times(1)).findByDni("123");
+    verify(customerRepository,times(1)).findByDni("12345678");
     verify(customerRepository, times(1)).save(any(Customer.class));
   }
 
   @Test
-  void update_whenCustomerExists_shouldReturnUpdatedCustomer() {
-    Customer existing = new Customer("1", "123", "Alice", "111", "a@mail.com");
-    CustomerRequest request = CustomerRequest.builder()
+  @DisplayName("update - Should emit updated customer reactively")
+  void update_Success() {
+    CustomerRequest updateRequest = CustomerRequest.builder()
         .dni("12345678")
-        .fullName("Arturo Update")
-        .phone("995937466")
-        .email("morylex@gmail.com")
+        .fullName("Juan Perez")
+        .phone("98745621")
+        .email("juan.perez@example.com")
         .build();
-    Customer updated = new Customer("1", "999", "Alice Updated", "999", "new@mail.com");
 
-    when(customerRepository.findById("1")).thenReturn(Mono.just(existing));
-    when(customerRepository.save(existing)).thenReturn(Mono.just(updated));
+    Customer updatedCustomer = Customer.builder()
+        .id("123")
+        .dni("99999999")
+        .fullName("Updated Name")
+        .phone("999999999")
+        .email("updated@example.com")
+        .build();
 
-    StepVerifier.create(service.update("1", request))
-        .expectNextMatches(dto -> dto.getDni().equals("999") && dto.getFullName().equals("Alice Updated"))
+    when(customerRepository.findById("123")).thenReturn(Mono.just(customer));
+    when(customerRepository.save(any(Customer.class))).thenReturn(Mono.just(updatedCustomer));
+
+    StepVerifier.create(customerService.update("123", updateRequest))
+        .assertNext(dto -> {
+          assertThat(dto.getDni()).isEqualTo("99999999");
+          assertThat(dto.getFullName()).isEqualTo("Updated Name");
+        })
         .verifyComplete();
 
-    verify(customerRepository, times(1)).findById("1");
-    verify(customerRepository, times(1)).save(existing);
+    verify(customerRepository, times(1)).findById("123");
+    verify(customerRepository, times(1)).save(any(Customer.class));
   }
 
   @Test
-  void update_whenCustomerNotFound_shouldThrowNotFoundException() {
-    CustomerRequest request = CustomerRequest.builder()
-        .dni("12345678")
-        .fullName("Arturo Update")
-        .phone("995937466")
-        .email("morylex@gmail.com")
-        .build();
+  @DisplayName("update - Should emit error when customer not found")
+  void update_NotFound() {
+    when(customerRepository.findById("999")).thenReturn(Mono.empty());
 
-    when(customerRepository.findById("1")).thenReturn(Mono.empty());
-
-    StepVerifier.create(service.update("1", request))
-        .expectErrorMatches(err -> err instanceof NotFoundException &&
-            err.getMessage().equals("Customer not found"))
+    StepVerifier.create(customerService.update("999", customerRequest))
+        .expectErrorMatches(throwable ->
+            throwable instanceof NotFoundException &&
+                throwable.getMessage().equals("Customer not found"))
         .verify();
 
-    verify(customerRepository, times(1)).findById("1");
-    verify(customerRepository, never()).save(any());
+    verify(customerRepository, never()).save(any(Customer.class));
   }
 
   @Test
-  void delete_shouldCallRepositoryDelete() {
-    when(customerRepository.deleteById("1")).thenReturn(Mono.empty());
+  @DisplayName("delete - Should complete reactively")
+  void delete_Success() {
+    when(customerRepository.deleteById("123")).thenReturn(Mono.empty());
 
-    StepVerifier.create(service.delete("1"))
+    StepVerifier.create(customerService.delete("123"))
         .verifyComplete();
 
-    verify(customerRepository, times(1)).deleteById("1");
+    verify(customerRepository, times(1)).deleteById("123");
+  }
+
+  @Test
+  @DisplayName("delete - Should propagate error reactively")
+  void delete_Error() {
+    when(customerRepository.deleteById("123"))
+        .thenReturn(Mono.error(new RuntimeException("Database error")));
+
+    StepVerifier.create(customerService.delete("123"))
+        .expectError(RuntimeException.class)
+        .verify();
+  }
+
+  @Test
+  @DisplayName("findAll - Should handle repository error")
+  void findAll_RepositoryError() {
+    when(customerRepository.findAll())
+        .thenReturn(Flux.error(new RuntimeException("Database connection failed")));
+
+    StepVerifier.create(customerService.findAll())
+        .expectError(RuntimeException.class)
+        .verify();
+  }
+
+  @Test
+  @DisplayName("create - Should handle repository error")
+  void create_RepositoryError() {
+    CustomerRequest request = CustomerRequest.builder()
+        .dni("12345678")
+        .fullName("Arturo Mory")
+            .build();
+
+    when(customerRepository.findByDni("12345678"))
+        .thenReturn(Mono.empty());
+
+    when(customerRepository.save(any()))
+        .thenReturn(Mono.error(new RuntimeException("DB error")));
+
+    StepVerifier.create(customerService.create(request))
+        .expectErrorMatches(err ->
+            err instanceof RuntimeException &&
+                err.getMessage().equals("DB error"))
+        .verify();
+
+    verify(customerRepository).findByDni("12345678");
+    verify(customerRepository).save(any());
   }
 }
