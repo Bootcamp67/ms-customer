@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Data
@@ -16,5 +17,6 @@ public class CustomerUpdatedEvent {
   private String customerId;
   private Map<String, Object> updatedFields;  // Changed fields
   private String updatedBy;
+  private LocalDateTime updatedAt;
   private String reason;
 }

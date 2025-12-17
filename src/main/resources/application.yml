@@ -10,6 +10,10 @@ spring:
   data:
     monodb:
       uri: mongodb://localhost:27017/bootcampbd
+    redis:
+      host: localhost
+      port: 6379
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
