@@ -9,8 +9,18 @@ spring:
     name: ms-customer
   data:
     monodb:
-      uri: mongodb://
-
+      uri: mongodb://localhost:27017/bootcampbd
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: ${spring.application.name}-group
+      properties:
+        spring.json.trusted.packages: "*"
 
   cloud:
     config:
