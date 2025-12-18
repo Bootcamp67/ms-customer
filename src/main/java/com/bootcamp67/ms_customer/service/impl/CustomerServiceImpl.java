@@ -63,6 +63,8 @@ public class CustomerServiceImpl implements CustomerService {
                 Customer.builder()
                     .dni(request.getDni())
                     .fullName(request.getFullName())
+                    .phone(request.getPhone())
+                    .email(request.getEmail())
                     .build()
             )
                 .flatMap(savedCustomer->{
